@@ -7,9 +7,9 @@ import random
 import os
 
 # Configuración - Pantalla horizontal (landscape)
-WIDTH = 854
-HEIGHT = 480
-FPS = 60
+WIDTH = 684
+HEIGHT = 384
+FPS = 120
 
 # Colores
 BG_COLOR = (10, 22, 40)      # Azul oscuro #0a1628
@@ -52,11 +52,12 @@ def main():
             "speed": random.uniform(0.3, 1.2),
         })
 
-    # Patrón ECG: 100% segmentos rectos, estilo robótico/digital
+    # Patrón ECG: 100% segmentos rectos, tres latidos por ciclo (1/3 menos tiempo entre latidos)
     def generate_ecg_points(length=200):
         points = []
         for i in range(length):
-            t = i / length
+            # Tres latidos en el mismo tramo: repetir fase 0-1 tres veces
+            t = (i / length * 3) % 1.0
             # Solo líneas rectas, sin curvas
             if t < 0.05:
                 y = 0
@@ -139,8 +140,8 @@ def main():
         # Dibujar ECG (junto al corazón)
         draw_ecg(screen, 100, 55, ecg_offset, ecg_template)
 
-        # Dibujar Mewtwo (centro) con efecto respirar + flotar
-        draw_mewtwo(screen, mewtwo_img, WIDTH // 2, HEIGHT // 2, time)
+        # Dibujar Mewtwo (un poco más abajo y más grande)
+        draw_mewtwo(screen, mewtwo_img, WIDTH // 2, HEIGHT // 2 + 50, time)
 
         pygame.display.flip()
 
@@ -193,10 +194,10 @@ def draw_heart(surface, cx, cy, scale):
 
 
 def draw_ecg(surface, start_x, center_y, offset, template):
-    """Dibuja línea ECG con scroll horizontal."""
+    """Dibuja línea ECG con scroll horizontal (mitad de largo)."""
     points = []
     pattern_len = len(template) * 3
-    for x in range(380):
+    for x in range(190):  # mitad de largo que antes (380 → 190)
         pattern_x = (offset + x) % pattern_len
         i = min(int(pattern_x / 3), len(template) - 1)
         dy = template[i][1]
@@ -219,16 +220,11 @@ def draw_mewtwo(surface, img, cx, cy, time=0.0):
         breath_scale = 1.0 + breath  # entre ~0.975 y 1.025
 
         rect = img.get_rect(center=(cx_eff, cy_eff))
-        max_w, max_h = 200, 280
+        max_w, max_h = 240, 340
         scale = min(max_w / rect.width, max_h / rect.height, 1.0) * breath_scale
         new_size = (int(rect.width * scale), int(rect.height * scale))
         scaled = pygame.transform.smoothscale(img, new_size)
         rect = scaled.get_rect(center=(cx_eff, cy_eff))
-
-        # Halo opcional (sigue al sprite)
-        halo = pygame.Surface((250, 320), pygame.SRCALPHA)
-        pygame.draw.ellipse(halo, (*NEON_BLUE, 40), halo.get_rect(), 2)
-        surface.blit(halo, (cx_eff - 125, cy_eff - 160))
 
         surface.blit(scaled, rect)
     else:
